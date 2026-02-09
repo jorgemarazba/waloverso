@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import MemberForm from './components/MemberForm.vue'
 import MemberList from './components/MemberList.vue'
 import MemberCards from './components/MemberCards.vue'
@@ -24,10 +24,20 @@ const isDemoMode = computed(() => {
 // Todos los miembros sin filtrar
 const filteredMembers = computed(() => allMembers.value)
 
+const loadMembers = async () => {
+  try {
+    const { getMembers } = await import('./services/api.js')
+    const members = await getMembers()
+    allMembers.value = members
+  } catch (err) {
+    console.error('Error loading members:', err)
+  }
+}
+
 const handleMemberSaved = () => {
   resetForm()
   showForm.value = false
-  memberListRef.value?.loadMembers()
+  loadMembers()
 }
 
 const handleEditMember = (member) => {
@@ -46,7 +56,7 @@ const handleDelete = async (id) => {
     const { deleteMember } = await import('./services/api.js')
     try {
       await deleteMember(id)
-      memberListRef.value?.loadMembers()
+      loadMembers()
     } catch (err) {
       console.error('Error:', err)
     }
@@ -57,7 +67,7 @@ const handleIncrement = async (id) => {
   const { incrementSuperviviencia } = await import('./services/api.js')
   try {
     await incrementSuperviviencia(id)
-    memberListRef.value?.loadMembers()
+    loadMembers()
   } catch (err) {
     console.error('Error:', err)
   }
@@ -67,6 +77,11 @@ const resetForm = () => {
   editingMember.value = null
   isEditing.value = false
 }
+
+// Cargar miembros cuando la página se carga
+onMounted(() => {
+  loadMembers()
+})
 
 const handleTestConnection = async () => {
   debugMode.value = true
