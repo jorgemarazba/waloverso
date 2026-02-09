@@ -3,17 +3,13 @@ import { ref, computed } from 'vue'
 import MemberForm from './components/MemberForm.vue'
 import MemberList from './components/MemberList.vue'
 import MemberCards from './components/MemberCards.vue'
-import StatsCard from './components/StatsCard.vue'
-import SearchFilter from './components/SearchFilter.vue'
 import { testSupabaseConnection, getAllGuildMembers } from './services/debug'
 
 const isEditing = ref(false)
 const editingMember = ref(null)
 const memberListRef = ref(null)
 const allMembers = ref([])
-const searchQuery = ref('')
 const viewMode = ref('cards')
-const sortBy = ref('nombre')
 const debugMode = ref(false)
 const debugMessage = ref('')
 const showForm = ref(false)
@@ -25,29 +21,8 @@ const isDemoMode = computed(() => {
   return !url || !key || url.trim() === '' || key.trim() === ''
 })
 
-// Filtrar y ordenar miembros
-const filteredMembers = computed(() => {
-  let filtered = allMembers.value
-
-  // Buscar
-  if (searchQuery.value.trim()) {
-    const query = searchQuery.value.toLowerCase()
-    filtered = filtered.filter(m =>
-      m.nombre?.toLowerCase().includes(query) ||
-      m.personaje_principal?.toLowerCase().includes(query) ||
-      m.nombre_ankama?.toLowerCase().includes(query)
-    )
-  }
-
-  // Ordenar
-  if (sortBy.value === 'limpieza') {
-    filtered.sort((a, b) => (b.limpieza || 0) - (a.limpieza || 0))
-  } else {
-    filtered.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''))
-  }
-
-  return filtered
-})
+// Todos los miembros sin filtrar
+const filteredMembers = computed(() => allMembers.value)
 
 const handleMemberSaved = () => {
   resetForm()
@@ -167,23 +142,6 @@ defineExpose({
             :is-editing="isEditing"
             @member-saved="handleMemberSaved"
             @edit-cancelled="handleEditCancelled"
-          />
-        </div>
-
-        <!-- ESTADÍSTICAS -->
-        <div class="section-stats">
-          <StatsCard :members="filteredMembers" />
-        </div>
-
-        <!-- BÚSQUEDA Y FILTROS -->
-        <div class="section-controls">
-          <SearchFilter
-            :search-query="searchQuery"
-            :view-mode="viewMode"
-            :sort-by="sortBy"
-            @update:search="searchQuery = $event"
-            @update:viewMode="viewMode = $event"
-            @update:sortBy="sortBy = $event"
           />
         </div>
 
@@ -362,18 +320,8 @@ defineExpose({
   animation: slideUp 0.6s ease-out;
 }
 
-.section-stats {
-  margin-bottom: 3rem;
-  animation: slideUp 0.6s ease-out;
-}
-
-.section-controls {
-  margin-bottom: 2rem;
-  animation: slideUp 0.6s ease-out 0.1s backwards;
-}
-
 .section-members {
-  animation: slideUp 0.6s ease-out 0.2s backwards;
+  animation: slideUp 0.6s ease-out 0.1s backwards;
 }
 
 @keyframes slideUp {
@@ -426,14 +374,6 @@ defineExpose({
 
   .section-form {
     margin-bottom: 2rem;
-  }
-
-  .section-stats {
-    margin-bottom: 2rem;
-  }
-
-  .section-controls {
-    margin-bottom: 1.5rem;
   }
 }
 </style>
