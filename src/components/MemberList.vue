@@ -1,52 +1,54 @@
 <template>
   <div class="member-list">
-    <h2>Miembros del Gremio</h2>
-
     <div v-if="loading" class="loading">
-      Cargando miembros...
+      🔄 Cargando miembros...
     </div>
 
-    <div v-else-if="members.length === 0" class="empty-state">
-      <p>No hay miembros registrados. ¡Agrega el primero!</p>
+    <div v-else-if="displayMembers.length === 0" class="empty-state">
+      <p>😢 No hay miembros registrados. ¡Agrega el primero!</p>
     </div>
 
     <div v-else class="table-responsive">
       <table class="members-table">
         <thead>
           <tr>
-            <th>Nombre</th>
             <th>Personaje Principal</th>
-            <th>Información de Ankama</th>
-            <th>Limpiezas</th>
-            <th>Acciones</th>
+            <th>Apodo Ankama</th>
+            <th>Secundarios / Twitch</th>
+            <th>Quién Invitó</th>
+            <th class="col-supervivencia">Supervivencia 🗡️</th>
+            <th class="col-actions">Acciones</th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="member in members" :key="member.id">
-            <td class="cell-nombre">
-              <strong>{{ member.nombre }}</strong>
-            </td>
+          <tr v-for="member in displayMembers" :key="member.id">
             <td class="cell-personaje">
-              {{ member.personaje_principal }}
+              <strong>⚔️ {{ member.personaje_principal }}</strong>
+            </td>
+            <td class="cell-apodo">
+              {{ member.apodo_ankama }}
             </td>
             <td class="cell-info">
-              <div v-if="member.nombre_ankama" class="info-item">
-                <span class="label">Ankama:</span> {{ member.nombre_ankama }}
+              <div v-if="member.personajes_secundarios" class="info-item">
+                <span class="label">🔄</span> {{ member.personajes_secundarios }}
               </div>
-              <div v-if="member.cuenta_secundaria" class="info-item">
-                <span class="label">Secundaria:</span> {{ member.cuenta_secundaria }}
-              </div>
-              <div v-if="member.heroes" class="info-item">
-                <span class="label">Héroes:</span> {{ member.heroes }}
+              <div v-if="member.nombre_twitch" class="info-item">
+                <span class="label">🎮</span> 
+                <a :href="`https://twitch.tv/${member.nombre_twitch}`" target="_blank">
+                  {{ member.nombre_twitch }}
+                </a>
               </div>
             </td>
-            <td class="cell-limpieza">
-              <div class="limpieza-counter">
-                <span class="count">{{ member.limpieza || 0 }}</span>
+            <td class="cell-invito">
+              {{ member.quien_invito || '-' }}
+            </td>
+            <td class="cell-supervivencia">
+              <div class="supervivencia-counter">
+                <span class="count">{{ member.supervivencia_purga || 0 }}</span>
                 <button
-                  @click="handleIncrementCleanup(member.id)"
+                  @click="handleIncrement(member.id)"
                   class="btn-increment"
-                  title="Incrementar limpieza"
+                  title="Incrementar supervivencia"
                 >
                   +
                 </button>
@@ -74,26 +76,40 @@
     </div>
 
     <div v-if="error" class="error-message">
-      {{ error }}
+      ❌ {{ error }}
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { getMembers, deleteMember, incrementCleanup } from '../services/api'
+import { ref, onMounted, computed } from 'vue'
+import { getMembers, deleteMember, incrementSuperviviencia } from '../services/api'
 
-const emit = defineEmits(['edit-member'])
+const props = defineProps({
+  members: {
+    type: Array,
+    default: () => []
+  }
+})
 
-const members = ref([])
+const emit = defineEmits(['edit-member', 'set-members'])
+
+const internalMembers = ref([])
 const loading = ref(true)
 const error = ref('')
+
+// Usar members de props si se proporciona, si no usar internalMembers
+const displayMembers = computed(() => {
+  return props.members.length > 0 ? props.members : internalMembers.value
+})
 
 const loadMembers = async () => {
   try {
     loading.value = true
     error.value = ''
-    members.value = await getMembers()
+    const members = await getMembers()
+    internalMembers.value = members
+    emit('set-members', members)
   } catch (err) {
     error.value = 'Error al cargar miembros: ' + err.message
   } finally {
@@ -116,12 +132,12 @@ const handleDelete = async (id) => {
   }
 }
 
-const handleIncrementCleanup = async (id) => {
+const handleIncrement = async (id) => {
   try {
-    await incrementCleanup(id)
+    await incrementSuperviviencia(id)
     await loadMembers()
   } catch (err) {
-    error.value = 'Error al actualizar limpieza: ' + err.message
+    error.value = 'Error al actualizar supervivencia: ' + err.message
   }
 }
 
@@ -136,36 +152,28 @@ defineExpose({
 .member-list {
   background: white;
   padding: 2rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-h2 {
-  color: #333;
-  margin-bottom: 1.5rem;
-  border-bottom: 2px solid #28a745;
-  padding-bottom: 0.5rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .loading {
   text-align: center;
-  padding: 2rem;
+  padding: 3rem 2rem;
   color: #666;
   font-size: 1.1rem;
 }
 
 .empty-state {
   text-align: center;
-  padding: 2rem;
+  padding: 3rem 2rem;
   color: #999;
   background: #f5f5f5;
-  border-radius: 4px;
-  margin: 1rem 0;
+  border-radius: 8px;
+  font-size: 1.1rem;
 }
 
 .empty-state p {
   margin: 0;
-  font-size: 1.1rem;
 }
 
 .table-responsive {
@@ -179,24 +187,32 @@ h2 {
 }
 
 .members-table thead {
-  background: #f8f9fa;
-  border-bottom: 2px solid #dee2e6;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-bottom: 2px solid #667eea;
 }
 
 .members-table th {
   padding: 1rem;
   text-align: left;
   font-weight: 600;
-  color: #333;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  letter-spacing: 0.5px;
 }
 
 .members-table tbody tr {
-  border-bottom: 1px solid #dee2e6;
-  transition: background-color 0.2s;
+  border-bottom: 1px solid #eee;
+  transition: all 0.3s;
 }
 
 .members-table tbody tr:hover {
-  background-color: #f5f5f5;
+  background-color: #f9f9f9;
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.02);
+}
+
+.members-table tr:nth-child(even) {
+  background-color: #fbfbfb;
 }
 
 .members-table td {
@@ -206,6 +222,8 @@ h2 {
 
 .cell-nombre {
   min-width: 120px;
+  font-weight: 600;
+  color: #333;
 }
 
 .cell-personaje {
@@ -219,13 +237,16 @@ h2 {
 }
 
 .info-item {
-  margin: 0.25rem 0;
+  margin: 0.3rem 0;
   color: #666;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .info-item .label {
   font-weight: 600;
-  color: #333;
+  min-width: 20px;
 }
 
 .cell-limpieza {
@@ -236,12 +257,16 @@ h2 {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  background: #f0f4ff;
+  padding: 0.5rem;
+  border-radius: 6px;
+  width: fit-content;
 }
 
 .count {
   font-weight: 700;
-  font-size: 1.2rem;
-  color: #007bff;
+  font-size: 1.3rem;
+  color: #667eea;
   min-width: 30px;
   text-align: center;
 }
@@ -257,52 +282,57 @@ h2 {
   font-weight: bold;
   cursor: pointer;
   transition: all 0.3s;
+  flex-shrink: 0;
 }
 
 .btn-increment:hover {
   background: #218838;
-  transform: scale(1.1);
+  transform: scale(1.15);
+  box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
 }
 
 .cell-actions {
-  min-width: 200px;
+  min-width: 180px;
   display: flex;
   gap: 0.5rem;
 }
 
 .btn {
   border: none;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
   transition: all 0.3s;
   font-size: 0.9rem;
+  font-weight: 500;
 }
 
 .btn-sm {
-  padding: 0.4rem 0.8rem;
+  padding: 0.5rem 0.8rem;
   font-size: 0.85rem;
 }
 
 .btn-edit {
   background: #007bff;
   color: white;
+  flex: 1;
 }
 
 .btn-edit:hover {
   background: #0056b3;
   transform: translateY(-2px);
-  box-shadow: 0 2px 4px rgba(0, 123, 255, 0.3);
+  box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3);
 }
 
 .btn-delete {
   background: #dc3545;
   color: white;
+  flex: 1;
 }
 
 .btn-delete:hover {
   background: #c82333;
   transform: translateY(-2px);
-  box-shadow: 0 2px 4px rgba(220, 53, 69, 0.3);
+  box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
 }
 
 .error-message {
@@ -310,18 +340,26 @@ h2 {
   padding: 1rem;
   background: #f8d7da;
   border: 1px solid #f5c6cb;
-  border-radius: 4px;
+  border-radius: 6px;
   margin-top: 1rem;
 }
 
-@media (max-width: 768px) {
+.col-limpiezas {
+  text-align: center;
+}
+
+.col-actions {
+  text-align: center;
+}
+
+@media (max-width: 1024px) {
   .members-table {
     font-size: 0.85rem;
   }
 
   .members-table th,
   .members-table td {
-    padding: 0.75rem 0.5rem;
+    padding: 0.8rem 0.5rem;
   }
 
   .cell-info {
@@ -335,7 +373,40 @@ h2 {
 
   .btn-sm {
     width: 100%;
-    padding: 0.5rem 0.5rem;
+    padding: 0.5rem 0.4rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .member-list {
+    padding: 1rem;
+  }
+
+  .members-table {
+    font-size: 0.75rem;
+  }
+
+  .members-table th,
+  .members-table td {
+    padding: 0.6rem 0.3rem;
+  }
+
+  .cell-info {
+    min-width: 120px;
+  }
+
+  .limpieza-counter {
+    gap: 0.25rem;
+  }
+
+  .btn-increment {
+    width: 28px;
+    height: 28px;
+    font-size: 0.9rem;
+  }
+
+  .count {
+    font-size: 1rem;
   }
 }
 </style>

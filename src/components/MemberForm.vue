@@ -4,62 +4,62 @@
     
     <form @submit.prevent="handleSubmit">
       <div class="form-group">
-        <label for="nombre">Nombre del Usuario:</label>
-        <input
-          id="nombre"
-          v-model="formData.nombre"
-          type="text"
-          required
-          placeholder="Nombre del usuario"
-        />
-      </div>
-
-      <div class="form-group">
-        <label for="personaje">Personaje Principal:</label>
+        <label for="personaje">Designa un personaje principal:</label>
         <input
           id="personaje"
           v-model="formData.personaje_principal"
           type="text"
           required
-          placeholder="Nombre del personaje principal"
+          placeholder="Ej: Assa"
         />
       </div>
 
       <div class="form-group">
-        <label for="heroes">Héroes (separados por coma):</label>
+        <label for="apodo">Apodo Ankama:</label>
         <input
-          id="heroes"
-          v-model="formData.heroes"
+          id="apodo"
+          v-model="formData.apodo_ankama"
           type="text"
-          placeholder="Héroe1, Héroe2, Héroe3"
+          required
+          placeholder="Ej: kisaketi#5025"
         />
       </div>
 
       <div class="form-group">
-        <label for="secundaria">Cuenta Secundaria:</label>
+        <label for="secundarios">Nombre de tus personajes secundarios:</label>
         <input
-          id="secundaria"
-          v-model="formData.cuenta_secundaria"
+          id="secundarios"
+          v-model="formData.personajes_secundarios"
           type="text"
-          placeholder="Nombre de la cuenta secundaria"
+          placeholder="Ej: Personnaje1, Personnaje2"
         />
       </div>
 
       <div class="form-group">
-        <label for="ankama">Nombre de Ankama:</label>
+        <label for="twitch">Nombre de tu Twitch:</label>
         <input
-          id="ankama"
-          v-model="formData.nombre_ankama"
+          id="twitch"
+          v-model="formData.nombre_twitch"
           type="text"
-          placeholder="Nombre de Ankama"
+          placeholder="Tu usuario de Twitch"
         />
       </div>
 
       <div class="form-group">
-        <label for="limpieza">Número de Limpiezas:</label>
+        <label for="invito">Quien te invitó al gremio:</label>
         <input
-          id="limpieza"
-          v-model.number="formData.limpieza"
+          id="invito"
+          v-model="formData.quien_invito"
+          type="text"
+          placeholder="Nombre del miembro que te invitó"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="purga">Supervivencia de Purga:</label>
+        <input
+          id="purga"
+          v-model.number="formData.supervivencia_purga"
           type="number"
           min="0"
           placeholder="0"
@@ -83,7 +83,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { addMember, updateMember } from '../services/api'
 
 const props = defineProps({
@@ -94,12 +94,12 @@ const props = defineProps({
 const emit = defineEmits(['member-saved', 'edit-cancelled'])
 
 const formData = ref({
-  nombre: '',
   personaje_principal: '',
-  heroes: '',
-  cuenta_secundaria: '',
-  nombre_ankama: '',
-  limpieza: 0
+  apodo_ankama: '',
+  personajes_secundarios: '',
+  nombre_twitch: '',
+  quien_invito: '',
+  supervivencia_purga: 0
 })
 
 const error = ref('')
@@ -118,8 +118,8 @@ const handleSubmit = async () => {
   try {
     error.value = ''
     
-    if (!formData.value.nombre || !formData.value.personaje_principal) {
-      error.value = 'Por favor completa los campos requeridos'
+    if (!formData.value.personaje_principal || !formData.value.apodo_ankama) {
+      error.value = 'Por favor completa los campos requeridos (personaje y apodo)'
       return
     }
 
@@ -138,12 +138,12 @@ const handleSubmit = async () => {
 
 const resetForm = () => {
   formData.value = {
-    nombre: '',
     personaje_principal: '',
-    heroes: '',
-    cuenta_secundaria: '',
-    nombre_ankama: '',
-    limpieza: 0
+    apodo_ankama: '',
+    personajes_secundarios: '',
+    nombre_twitch: '',
+    quien_invito: '',
+    supervivencia_purga: 0
   }
 }
 
@@ -153,13 +153,6 @@ const cancelEdit = () => {
 }
 
 watch(() => props.editingMember, updateFormData, { immediate: true })
-</script>
-
-<script>
-import { watch } from 'vue'
-export default {
-  name: 'MemberForm'
-}
 </script>
 
 <style scoped>
