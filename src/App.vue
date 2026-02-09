@@ -123,7 +123,7 @@ defineExpose({
   <div id="app" class="app-container">
     <header class="app-header">
       <div class="header-content">
-        <h1>⚔️ Gestor de Gremio Wakfu</h1>
+        <h1>Registro de Calamardos</h1>
         <p class="subtitle">Monitorea la actividad de tus miembros de gremio</p>
         <div v-if="isDemoMode" class="demo-notice">
           ⚠️ Modo Demo (sin Supabase) - Los datos se guardan localmente
@@ -146,7 +146,7 @@ defineExpose({
         <!-- BOTÓN PARA ABRIR FORMULARIO -->
         <div v-if="!showForm" class="section-new-button">
           <button @click="showForm = true" class="btn-new-calamardo">
-            ➕ Nuevo Registro de Calamardo
+            ➕ Nuevo Calamardo
           </button>
         </div>
 
