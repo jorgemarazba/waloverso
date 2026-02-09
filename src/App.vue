@@ -5,6 +5,7 @@ import MemberList from './components/MemberList.vue'
 import MemberCards from './components/MemberCards.vue'
 import StatsCard from './components/StatsCard.vue'
 import SearchFilter from './components/SearchFilter.vue'
+import { testSupabaseConnection, getAllGuildMembers } from './services/debug'
 
 const isEditing = ref(false)
 const editingMember = ref(null)
@@ -13,6 +14,9 @@ const allMembers = ref([])
 const searchQuery = ref('')
 const viewMode = ref('cards')
 const sortBy = ref('nombre')
+const debugMode = ref(false)
+const debugMessage = ref('')
+const showForm = ref(false)
 
 // Detectar si está en modo demo
 const isDemoMode = computed(() => {
@@ -47,16 +51,19 @@ const filteredMembers = computed(() => {
 
 const handleMemberSaved = () => {
   resetForm()
+  showForm.value = false
   memberListRef.value?.loadMembers()
 }
 
 const handleEditMember = (member) => {
   editingMember.value = member
   isEditing.value = true
+  showForm.value = true
 }
 
 const handleEditCancelled = () => {
   resetForm()
+  showForm.value = false
 }
 
 const handleDelete = async (id) => {
@@ -72,9 +79,9 @@ const handleDelete = async (id) => {
 }
 
 const handleIncrement = async (id) => {
-  const { incrementCleanup } = await import('./services/api.js')
+  const { incrementSuperviviencia } = await import('./services/api.js')
   try {
-    await incrementCleanup(id)
+    await incrementSuperviviencia(id)
     memberListRef.value?.loadMembers()
   } catch (err) {
     console.error('Error:', err)
@@ -84,6 +91,34 @@ const handleIncrement = async (id) => {
 const resetForm = () => {
   editingMember.value = null
   isEditing.value = false
+}
+
+const handleTestConnection = async () => {
+  debugMode.value = true
+  debugMessage.value = 'Probando conexión a Supabase...'
+  
+  try {
+    console.log('=== SUPABASE DEBUG ===')
+    console.log('VITE_SUPABASE_URL:', import.meta.env.VITE_SUPABASE_URL)
+    console.log('VITE_SUPABASE_ANON_KEY:', import.meta.env.VITE_SUPABASE_ANON_KEY ? 'SET' : 'NOT SET')
+    
+    const isConnected = await testSupabaseConnection()
+    if (!isConnected) {
+      debugMessage.value = '❌ Error: No se puede conectar a Supabase. Revisa la consola del navegador (F12).'
+      return
+    }
+
+    const members = await getAllGuildMembers()
+    if (members === null) {
+      debugMessage.value = '❌ Error: No se pueden obtener los miembros. Revisa la consola.'
+      return
+    }
+
+    debugMessage.value = `✅ Conexión OK. ${members.length} miembros encontrados. Actualiza la página.`
+  } catch (err) {
+    debugMessage.value = `❌ Error: ${err.message}`
+    console.error(err)
+  }
 }
 
 // Exponer allMembers para que MemberList pueda actualizarlo
@@ -103,13 +138,30 @@ defineExpose({
         <div v-if="isDemoMode" class="demo-notice">
           ⚠️ Modo Demo (sin Supabase) - Los datos se guardan localmente
         </div>
+        <button 
+          @click="handleTestConnection" 
+          class="btn-test"
+          title="Verificar conexión a Supabase"
+        >
+          🔧 Test Supabase
+        </button>
+      </div>
+      <div v-if="debugMessage" class="debug-message" :class="{ error: debugMessage.includes('❌') }">
+        {{ debugMessage }}
       </div>
     </header>
 
     <main class="app-main">
       <div class="container">
-        <!-- FORMULARIO -->
-        <div class="section-form">
+        <!-- BOTÓN PARA ABRIR FORMULARIO -->
+        <div v-if="!showForm" class="section-new-button">
+          <button @click="showForm = true" class="btn-new-calamardo">
+            ➕ Nuevo Registro de Calamardo
+          </button>
+        </div>
+
+        <!-- FORMULARIO (OCULTO POR DEFECTO) -->
+        <div v-if="showForm" class="section-form">
           <MemberForm
             :editing-member="editingMember"
             :is-editing="isEditing"
@@ -235,6 +287,38 @@ defineExpose({
   display: inline-block;
 }
 
+.btn-test {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  color: white;
+  padding: 0.6rem 1.2rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  margin-left: 1rem;
+  transition: all 0.3s ease;
+}
+
+.btn-test:hover {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: white;
+}
+
+.debug-message {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: rgba(76, 175, 80, 0.2);
+  border: 1px solid rgba(76, 175, 80, 0.5);
+  border-radius: 6px;
+  color: white;
+  font-size: 0.9rem;
+}
+
+.debug-message.error {
+  background: rgba(244, 67, 54, 0.2);
+  border-color: rgba(244, 67, 54, 0.5);
+}
+
 .app-main {
   flex: 1;
   padding: 3rem 1rem;
@@ -245,8 +329,37 @@ defineExpose({
   margin: 0 auto;
 }
 
+.section-new-button {
+  text-align: center;
+  margin-bottom: 3rem;
+  animation: slideUp 0.6s ease-out;
+}
+
+.btn-new-calamardo {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 1.2rem 2.5rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  border-radius: 12px;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+  transition: all 0.3s ease;
+}
+
+.btn-new-calamardo:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
+}
+
+.btn-new-calamardo:active {
+  transform: translateY(-2px);
+}
+
 .section-form {
   margin-bottom: 3rem;
+  animation: slideUp 0.6s ease-out;
 }
 
 .section-stats {
