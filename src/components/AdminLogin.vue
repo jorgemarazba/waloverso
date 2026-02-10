@@ -35,32 +35,29 @@
 
         <!-- Panel de login -->
         <div v-else class="login-panel">
-          <!-- Form Admin -->
-          <div class="login-form">
+          <form class="login-form" @submit.prevent="handleAdminLogin">
             <h3>👑 Acceso Administrador</h3>
             <input
               v-model="adminUsername"
               type="text"
               placeholder="Nombre de usuario"
               class="input-field"
-              @keyup.enter="handleAdminLogin"
-              autocomplete="off"
+              autocomplete="username"
             />
             <input
               v-model="adminPassword"
               type="password"
               placeholder="Contraseña"
               class="input-field"
-              @keyup.enter="handleAdminLogin"
-              autocomplete="off"
+              autocomplete="current-password"
             />
             <div v-if="error" class="error-message">
               ❌ {{ error }}
             </div>
-            <button @click="handleAdminLogin" class="btn btn-primary">
+            <button type="submit" class="btn btn-primary">
               Ingresar como Admin
             </button>
-          </div>
+          </form>
         </div>
       </div>
     </div>
