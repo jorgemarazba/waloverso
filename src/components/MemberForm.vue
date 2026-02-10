@@ -28,14 +28,6 @@
       <div class="form-group-full">
         <div class="secundarios-header">
           <label>Personajes Secundarios:</label>
-          <button 
-            type="button" 
-            @click="addSecundario" 
-            class="btn-add-secundario"
-            title="Agregar otro personaje secundario"
-          >
-            ➕ Agregar Secundario
-          </button>
         </div>
         <div class="secundarios-list">
           <div 
@@ -59,6 +51,14 @@
             </button>
           </div>
         </div>
+        <button 
+          type="button" 
+          @click="addSecundario" 
+          class="btn-add-secundario btn-add-secundario-bottom"
+          title="Agregar otro personaje secundario"
+        >
+          ➕ Agregar Secundario
+        </button>
       </div>
 
       <div class="form-group">
@@ -260,6 +260,11 @@ form {
   font-size: 0.85rem;
   cursor: pointer;
   transition: all 0.3s;
+}
+
+.btn-add-secundario-bottom {
+  align-self: flex-start;
+  margin-top: 0.75rem;
 }
 
 .btn-add-secundario:hover {
