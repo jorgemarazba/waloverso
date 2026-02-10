@@ -155,6 +155,7 @@ defineExpose({
             <MemberForm
               :editing-member="editingMember"
               :is-editing="isEditing"
+              :members="allMembers"
               @member-saved="handleMemberSaved"
               @edit-cancelled="handleEditCancelled"
             />

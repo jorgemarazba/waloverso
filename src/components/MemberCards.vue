@@ -76,6 +76,13 @@
             <span class="label">👥 Quién te Invitó</span>
             <p class="value">{{ member.quien_invito }}</p>
           </div>
+
+          <div v-if="member.fecha_registro" class="card-section">
+            <span class="label">📅 Fecha de registro</span>
+            <p class="value">
+              {{ new Date(member.fecha_registro).toLocaleDateString() }}
+            </p>
+          </div>
         </div>
 
         <div class="card-footer">

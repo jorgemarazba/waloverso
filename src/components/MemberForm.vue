@@ -1,6 +1,6 @@
 <template>
   <div class="member-form">
-    <h2>{{ isEditing ? 'Editar Miembro' : 'Agregar Nuevo Miembro' }}</h2>
+    <h2>{{ isEditing ? 'Editar Miembro' : 'Registro de Nuevo Miembro' }}</h2>
     
     <form @submit.prevent="handleSubmit">
       <div class="form-group">
@@ -10,7 +10,8 @@
           v-model="formData.personaje_principal"
           type="text"
           required
-          placeholder="Ej: Assa"
+          placeholder="Ej: Tu nick principal (3-25 caracteres, sin espacios)"
+          maxlength="25"
         />
       </div>
 
@@ -22,6 +23,7 @@
           type="text"
           required
           placeholder="Ej: kisaketi#5025"
+          maxlength="30"
         />
       </div>
 
@@ -39,6 +41,7 @@
               v-model="formData.personajes_secundarios[index]"
               type="text"
               :placeholder="`Personaje secundario ${index + 1}`"
+              maxlength="25"
             />
             <button 
               v-if="formData.personajes_secundarios.length > 1"
@@ -63,21 +66,54 @@
 
       <div class="form-group">
         <label for="twitch">Nombre de tu Twitch:</label>
-        <input
-          id="twitch"
-          v-model="formData.nombre_twitch"
-          type="text"
-          placeholder="Tu usuario de Twitch"
-        />
+        <div class="twitch-field">
+          <input
+            id="twitch"
+            v-model="formData.nombre_twitch"
+            type="text"
+            placeholder="Tu usuario de Twitch (sin URL, solo usuario)"
+          />
+          <button
+            type="button"
+            class="btn btn-secondary btn-twitch-check"
+            @click="openTwitchChannel"
+            :disabled="!formData.nombre_twitch"
+            title="Abrir canal en Twitch para comprobar que existe"
+          >
+            Ver canal
+          </button>
+        </div>
       </div>
 
       <div class="form-group">
         <label for="invito">Quien te invitó al gremio:</label>
+        <div class="invito-field">
+          <input
+            id="invito"
+            v-model="formData.quien_invito"
+            type="text"
+            list="invito-options"
+            placeholder="Selecciona o escribe quién te invitó (3-25 caracteres)"
+            minlength="3"
+            maxlength="25"
+          />
+          <datalist id="invito-options">
+            <option value="walopi"></option>
+            <option
+              v-for="member in invitadores"
+              :key="member"
+              :value="member"
+            ></option>
+          </datalist>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="fecha_registro">Fecha de registro:</label>
         <input
-          id="invito"
-          v-model="formData.quien_invito"
-          type="text"
-          placeholder="Nombre del miembro que te invitó"
+          id="fecha_registro"
+          v-model="formData.fecha_registro"
+          type="date"
         />
       </div>
 
@@ -114,7 +150,11 @@ import { addMember, updateMember } from '../services/api'
 
 const props = defineProps({
   editingMember: Object,
-  isEditing: Boolean
+  isEditing: Boolean,
+  members: {
+    type: Array,
+    default: () => []
+  }
 })
 
 const emit = defineEmits(['member-saved', 'edit-cancelled'])
@@ -124,13 +164,22 @@ const formData = ref({
   apodo_ankama: '',
   personajes_secundarios: [''],
   nombre_twitch: '',
-  quien_invito: '',
+  quien_invito: 'walopi',
+  fecha_registro: new Date().toISOString().slice(0, 10),
   supervivencia_purga: 0
 })
 
 const error = ref('')
 
 const isEditing = computed(() => props.isEditing)
+
+const invitadores = computed(() => {
+  const nombres = props.members
+    .map(m => m.personaje_principal)
+    .filter(Boolean)
+    .filter(name => name.toLowerCase() !== 'walopi')
+  return Array.from(new Set(nombres))
+})
 
 const addSecundario = () => {
   formData.value.personajes_secundarios.push('')
@@ -166,9 +215,41 @@ const handleSubmit = async () => {
       return
     }
 
-    // Filtrar personajes secundarios vacíos
+    const personajePrincipal = formData.value.personaje_principal.trim()
+    if (personajePrincipal.length < 3 || personajePrincipal.length > 25) {
+      error.value = 'El personaje principal debe tener entre 3 y 25 caracteres'
+      return
+    }
+    if (/\s/.test(personajePrincipal)) {
+      error.value = 'El personaje principal no puede contener espacios'
+      return
+    }
+
+    const apodoRegex = /^[^\s#]{1,25}#[0-9]{4}$/
+    if (!apodoRegex.test(formData.value.apodo_ankama)) {
+      error.value = 'El Apodo Ankama debe ser: hasta 25 caracteres sin espacios, luego "#" y 4 dígitos (ej: kisaketi#5025)'
+      return
+    }
+
+    const secundariosInvalidos = formData.value.personajes_secundarios
+      .filter(s => s.trim())
+      .some(s => s.length > 25 || /\s/.test(s))
+    if (secundariosInvalidos) {
+      error.value = 'Cada personaje secundario debe tener máximo 25 caracteres y no puede contener espacios'
+      return
+    }
+
+    const quienInvito = formData.value.quien_invito.trim()
+    if (quienInvito.length < 3 || quienInvito.length > 25) {
+      error.value = 'El campo "Quien te invitó al gremio" debe tener entre 3 y 25 caracteres'
+      return
+    }
+
+    // Filtrar personajes secundarios vacíos y aplicar trim a los campos validados
     const dataToSave = {
       ...formData.value,
+      personaje_principal: personajePrincipal,
+      quien_invito: quienInvito,
       personajes_secundarios: formData.value.personajes_secundarios.filter(s => s.trim())
     }
 
@@ -191,7 +272,8 @@ const resetForm = () => {
     apodo_ankama: '',
     personajes_secundarios: [''],
     nombre_twitch: '',
-    quien_invito: '',
+    quien_invito: 'walopi',
+    fecha_registro: new Date().toISOString().slice(0, 10),
     supervivencia_purga: 0
   }
 }
@@ -202,6 +284,13 @@ const cancelEdit = () => {
 }
 
 watch(() => props.editingMember, updateFormData, { immediate: true })
+
+const openTwitchChannel = () => {
+  if (!formData.value.nombre_twitch) return
+  const username = formData.value.nombre_twitch.trim()
+  const url = `https://www.twitch.tv/${encodeURIComponent(username)}`
+  window.open(url, '_blank')
+}
 </script>
 
 <style scoped>
@@ -374,6 +463,22 @@ input:focus {
 
 .btn-secondary:hover {
   background: #5a6268;
+}
+
+.twitch-field {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.btn-twitch-check {
+  padding: 0.6rem 0.9rem;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.invito-field {
+  width: 100%;
 }
 
 .error-message {

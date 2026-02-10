@@ -41,6 +41,13 @@ function processMember(member) {
   }
 }
 
+// Verificar que Supabase esté correctamente inicializado
+function ensureSupabaseClient() {
+  if (!supabase) {
+    throw new Error('Supabase no está configurado. Revisa VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY, y reinicia el servidor de desarrollo.')
+  }
+}
+
 // ==================== FUNCIONES DEMO (localStorage) ====================
 function getStoredMembers() {
   const data = localStorage.getItem(TABLE_NAME)
@@ -68,6 +75,7 @@ export async function getMembers() {
     }
 
     // Modo producción: usar Supabase
+    ensureSupabaseClient()
     const { data, error } = await supabase
       .from(TABLE_NAME)
       .select('*')
@@ -101,6 +109,7 @@ export async function addMember(member) {
     }
 
     // Modo producción
+    ensureSupabaseClient()
     const { data, error } = await supabase
       .from(TABLE_NAME)
       .insert([{
@@ -109,6 +118,7 @@ export async function addMember(member) {
         personajes_secundarios: stringifySecundarios(member.personajes_secundarios),
         nombre_twitch: member.nombre_twitch || '',
         quien_invito: member.quien_invito || '',
+        fecha_registro: member.fecha_registro || null,
         supervivencia_purga: member.supervivencia_purga || 0
       }])
       .select()
@@ -141,6 +151,7 @@ export async function updateMember(id, member) {
     }
 
     // Modo producción
+    ensureSupabaseClient()
     const { data, error } = await supabase
       .from(TABLE_NAME)
       .update({
@@ -149,6 +160,7 @@ export async function updateMember(id, member) {
         personajes_secundarios: stringifySecundarios(member.personajes_secundarios),
         nombre_twitch: member.nombre_twitch || '',
         quien_invito: member.quien_invito || '',
+        fecha_registro: member.fecha_registro || null,
         supervivencia_purga: member.supervivencia_purga || 0
       })
       .eq('id', id)
@@ -202,6 +214,7 @@ export async function incrementSuperviviencia(id) {
 
     // Modo producción
     // Obtener el miembro actual
+    ensureSupabaseClient()
     const { data: currentData, error: selectError } = await supabase
       .from(TABLE_NAME)
       .select('supervivencia_purga')
