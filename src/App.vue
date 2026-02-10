@@ -1,5 +1,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import Navbar from './components/Navbar.vue'
+import Welcome from './components/Welcome.vue'
 import MemberForm from './components/MemberForm.vue'
 import MemberList from './components/MemberList.vue'
 import MemberCards from './components/MemberCards.vue'
@@ -13,6 +15,7 @@ const viewMode = ref('cards')
 const debugMode = ref(false)
 const debugMessage = ref('')
 const showForm = ref(false)
+const currentPage = ref('welcome')
 
 // Detectar si está en modo demo
 const isDemoMode = computed(() => {
@@ -83,6 +86,11 @@ onMounted(() => {
   loadMembers()
 })
 
+const handleNavigate = (page) => {
+  currentPage.value = page
+  showForm.value = false
+}
+
 const handleTestConnection = async () => {
   debugMode.value = true
   debugMessage.value = 'Probando conexión a Supabase...'
@@ -121,66 +129,75 @@ defineExpose({
 
 <template>
   <div id="app" class="app-container">
-    <header class="app-header">
-      <div class="header-content">
-        <h1>Registro de Calamardos</h1>
-        <p class="subtitle">Monitorea la actividad de tus miembros de gremio</p>
-        <div v-if="isDemoMode" class="demo-notice">
-          ⚠️ Modo Demo (sin Supabase) - Los datos se guardan localmente
-        </div>
-        <button 
-          @click="handleTestConnection" 
-          class="btn-test"
-          title="Verificar conexión a Supabase"
-        >
-          🔧 Test Supabase
-        </button>
-      </div>
-      <div v-if="debugMessage" class="debug-message" :class="{ error: debugMessage.includes('❌') }">
-        {{ debugMessage }}
-      </div>
-    </header>
+    <!-- NAVBAR CON NAVEGACIÓN -->
+    <Navbar :current-page="currentPage" @navigate="handleNavigate" />
 
-    <main class="app-main">
-      <div class="container">
-        <!-- BOTÓN PARA ABRIR FORMULARIO -->
-        <div v-if="!showForm" class="section-new-button">
-          <button @click="showForm = true" class="btn-new-calamardo">
-            ➕ Nuevo Calamardo
+    <!-- PÁGINA DE BIENVENIDA -->
+    <Welcome v-if="currentPage === 'welcome'" />
+
+    <!-- PÁGINA DE CALAMARDOS (MIEMBROS) -->
+    <template v-else>
+      <header class="app-header">
+        <div class="header-content">
+          <h1>Registro de Calamardos</h1>
+          <p class="subtitle">Monitorea la actividad de tus miembros de gremio</p>
+          <div v-if="isDemoMode" class="demo-notice">
+            ⚠️ Modo Demo (sin Supabase) - Los datos se guardan localmente
+          </div>
+          <button 
+            @click="handleTestConnection" 
+            class="btn-test"
+            title="Verificar conexión a Supabase"
+          >
+            🔧 Test Supabase
           </button>
         </div>
-
-        <!-- FORMULARIO (OCULTO POR DEFECTO) -->
-        <div v-if="showForm" class="section-form">
-          <MemberForm
-            :editing-member="editingMember"
-            :is-editing="isEditing"
-            @member-saved="handleMemberSaved"
-            @edit-cancelled="handleEditCancelled"
-          />
+        <div v-if="debugMessage" class="debug-message" :class="{ error: debugMessage.includes('❌') }">
+          {{ debugMessage }}
         </div>
+      </header>
 
-        <!-- VISTA DE TARJETAS -->
-        <div v-if="viewMode === 'cards'" class="section-members">
-          <MemberCards
-            :members="filteredMembers"
-            @edit="handleEditMember"
-            @delete="handleDelete"
-            @increment="handleIncrement"
-          />
-        </div>
+      <main class="app-main">
+        <div class="container">
+          <!-- BOTÓN PARA ABRIR FORMULARIO -->
+          <div v-if="!showForm" class="section-new-button">
+            <button @click="showForm = true" class="btn-new-calamardo">
+              ➕ Nuevo Calamardo
+            </button>
+          </div>
 
-        <!-- VISTA DE TABLA -->
-        <div v-else class="section-members">
-          <MemberList
-            ref="memberListRef"
-            :members="filteredMembers"
-            @edit-member="handleEditMember"
-            @set-members="setMembers"
-          />
+          <!-- FORMULARIO (OCULTO POR DEFECTO) -->
+          <div v-if="showForm" class="section-form">
+            <MemberForm
+              :editing-member="editingMember"
+              :is-editing="isEditing"
+              @member-saved="handleMemberSaved"
+              @edit-cancelled="handleEditCancelled"
+            />
+          </div>
+
+          <!-- VISTA DE TARJETAS -->
+          <div v-if="viewMode === 'cards'" class="section-members">
+            <MemberCards
+              :members="filteredMembers"
+              @edit="handleEditMember"
+              @delete="handleDelete"
+              @increment="handleIncrement"
+            />
+          </div>
+
+          <!-- VISTA DE TABLA -->
+          <div v-else class="section-members">
+            <MemberList
+              ref="memberListRef"
+              :members="filteredMembers"
+              @edit-member="handleEditMember"
+              @set-members="setMembers"
+            />
+          </div>
         </div>
-      </div>
-    </main>
+      </main>
+    </template>
 
     <footer class="app-footer">
       <p>© 2026 Gestor de Gremio Wakfu • Desarrollado con Vue 3 + Supabase</p>
