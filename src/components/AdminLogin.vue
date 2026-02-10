@@ -4,8 +4,13 @@
       @click="showModal = true" 
       :class="{ 'logged-in': isAuthenticated }"
       class="auth-btn"
+      aria-label="Iniciar sesión de administrador"
+      title="Iniciar sesión"
     >
-      {{ isAuthenticated ? `👤 ${userName}` : '🔓 Ingresar' }}
+      <img src="/user.png" alt="" class="auth-icon" />
+      <span class="auth-text">
+        {{ isAuthenticated ? userName : 'Ingresar' }}
+      </span>
     </button>
 
     <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
@@ -36,7 +41,7 @@
             <input
               v-model="adminUsername"
               type="text"
-              placeholder="Usuario: walopi"
+              placeholder="Nombre de usuario"
               class="input-field"
               @keyup.enter="handleAdminLogin"
               autocomplete="off"
@@ -134,6 +139,19 @@ const closeModal = () => {
   font-weight: 600;
   transition: all 0.3s ease;
   font-size: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.auth-icon {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+.auth-text {
+  line-height: 1;
 }
 
 .auth-btn:hover {
