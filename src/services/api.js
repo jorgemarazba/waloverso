@@ -2,10 +2,11 @@ import { supabase } from './supabaseClient'
 
 const TABLE_NAME = 'guild_members'
 
-// Detectar si estamos en modo demo (sin credenciales de Supabase)
+// Detectar si estamos en modo demo mediante una flag explícita
+// Si VITE_DEMO_MODE === 'true' => usa localStorage, en caso contrario usa siempre Supabase
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
-const IS_DEMO_MODE = !SUPABASE_URL || !SUPABASE_KEY
+const IS_DEMO_MODE = import.meta.env.VITE_DEMO_MODE === 'true'
 
 // ==================== FUNCIONES HELPER ====================
 

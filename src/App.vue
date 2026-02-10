@@ -5,25 +5,21 @@ import Welcome from './components/Welcome.vue'
 import MemberForm from './components/MemberForm.vue'
 import MemberList from './components/MemberList.vue'
 import MemberCards from './components/MemberCards.vue'
-import { testSupabaseConnection, getAllGuildMembers } from './services/debug'
+// (Botón "Test Supabase" removido)
 
 const isEditing = ref(false)
 const editingMember = ref(null)
 const memberListRef = ref(null)
 const allMembers = ref([])
 const viewMode = ref('cards')
-const debugMode = ref(false)
-const debugMessage = ref('')
+// Debug UI removida (Test Supabase)
 const showForm = ref(false)
 const currentPage = ref('welcome')
 const searchQuery = ref('')
 
-// Detectar si está en modo demo
-const isDemoMode = computed(() => {
-  const url = import.meta.env.VITE_SUPABASE_URL
-  const key = import.meta.env.VITE_SUPABASE_ANON_KEY
-  return !url || !key || url.trim() === '' || key.trim() === ''
-})
+// Detectar si está en modo demo (controlado solo por VITE_DEMO_MODE)
+// Si no está activa la flag, se asume modo normal con Supabase
+const isDemoMode = computed(() => import.meta.env.VITE_DEMO_MODE === 'true')
 
 // Filtrar miembros por búsqueda
 const filteredMembers = computed(() => {
@@ -106,34 +102,6 @@ const handleNavigate = (page) => {
   showForm.value = false
 }
 
-const handleTestConnection = async () => {
-  debugMode.value = true
-  debugMessage.value = 'Probando conexión a Supabase...'
-  
-  try {
-    console.log('=== SUPABASE DEBUG ===')
-    console.log('VITE_SUPABASE_URL:', import.meta.env.VITE_SUPABASE_URL)
-    console.log('VITE_SUPABASE_ANON_KEY:', import.meta.env.VITE_SUPABASE_ANON_KEY ? 'SET' : 'NOT SET')
-    
-    const isConnected = await testSupabaseConnection()
-    if (!isConnected) {
-      debugMessage.value = '❌ Error: No se puede conectar a Supabase. Revisa la consola del navegador (F12).'
-      return
-    }
-
-    const members = await getAllGuildMembers()
-    if (members === null) {
-      debugMessage.value = '❌ Error: No se pueden obtener los miembros. Revisa la consola.'
-      return
-    }
-
-    debugMessage.value = `✅ Conexión OK. ${members.length} miembros encontrados. Actualiza la página.`
-  } catch (err) {
-    debugMessage.value = `❌ Error: ${err.message}`
-    console.error(err)
-  }
-}
-
 // Exponer allMembers para que MemberList pueda actualizarlo
 defineExpose({
   setMembers: (members) => {
@@ -154,21 +122,11 @@ defineExpose({
     <template v-else>
       <header class="app-header">
         <h1>Registro de Calamardos</h1>
-        <p class="subtitle">Monitorea la actividad de tus miembros de gremio</p>
+        <p class="subtitle">Registrate a la brevedad intrisicamente hablando</p>
         <div class="header-content">
           <div v-if="isDemoMode" class="demo-notice">
             ⚠️ Modo Demo (sin Supabase) - Los datos se guardan localmente
           </div>
-          <button 
-            @click="handleTestConnection" 
-            class="btn-test"
-            title="Verificar conexión a Supabase"
-          >
-            🔧 Test Supabase
-          </button>
-        </div>
-        <div v-if="debugMessage" class="debug-message" :class="{ error: debugMessage.includes('❌') }">
-          {{ debugMessage }}
         </div>
       </header>
 
