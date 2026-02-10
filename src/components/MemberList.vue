@@ -16,7 +16,7 @@
             <th>Apodo Ankama</th>
             <th>Secundarios / Twitch</th>
             <th>Quién Invitó</th>
-            <th class="col-supervivencia">Supervivencia 🗡️</th>
+            <th class="col-supervivencia">Purga 🗡️</th>
             <th class="col-actions">Acciones</th>
           </tr>
         </thead>
@@ -30,10 +30,15 @@
             </td>
             <td class="cell-info">
               <div v-if="member.personajes_secundarios" class="info-item">
-                <span class="label">🔄</span> {{ member.personajes_secundarios }}
+                <span class="label">
+                  <img src="/secundarios.png" alt="Personajes secundarios" class="label-icon label-icon-secundarios" />
+                </span>
+                {{ member.personajes_secundarios }}
               </div>
               <div v-if="member.nombre_twitch" class="info-item">
-                <span class="label">🎮</span> 
+                <span class="label">
+                  <img src="/twicht.jpg" alt="Twitch" class="label-icon" />
+                </span>
                 <a :href="`https://twitch.tv/${member.nombre_twitch}`" target="_blank">
                   {{ member.nombre_twitch }}
                 </a>
@@ -45,17 +50,11 @@
             <td class="cell-supervivencia">
               <div class="supervivencia-counter">
                 <span class="count">{{ member.supervivencia_purga || 0 }}</span>
-                <button
-                  @click="handleIncrement(member.id)"
-                  class="btn-increment"
-                  title="Incrementar supervivencia"
-                >
-                  +
-                </button>
               </div>
             </td>
             <td class="cell-actions">
               <button
+                v-if="isAuthenticated && isAdmin"
                 @click="handleEdit(member)"
                 class="btn btn-sm btn-edit"
                 title="Editar miembro"
@@ -63,12 +62,20 @@
                 ✎ Editar
               </button>
               <button
+                v-if="isAuthenticated && isAdmin"
                 @click="handleDelete(member.id)"
                 class="btn btn-sm btn-delete"
                 title="Eliminar miembro"
               >
                 ✕ Eliminar
               </button>
+              <span 
+                v-else 
+                 class="admin-only-hint" 
+                 title="Solo el administrador puede editar o eliminar"
+              >
+                🔐
+              </span>
             </td>
           </tr>
         </tbody>
@@ -84,6 +91,9 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { getMembers, deleteMember, incrementSuperviviencia } from '../services/api'
+import { useAuthStore } from '../stores/adminStore'
+
+const { isAdmin, isAuthenticated } = useAuthStore()
 
 const props = defineProps({
   members: {
@@ -150,10 +160,11 @@ defineExpose({
 
 <style scoped>
 .member-list {
-  background: white;
+  background: rgba(10, 10, 30, 0.65);
+  backdrop-filter: blur(6px);
   padding: 2rem;
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
 }
 
 .loading {
@@ -166,8 +177,9 @@ defineExpose({
 .empty-state {
   text-align: center;
   padding: 3rem 2rem;
-  color: #999;
-  background: #f5f5f5;
+  color: #e0e0ff;
+  background: rgba(10, 10, 30, 0.55);
+  backdrop-filter: blur(6px);
   border-radius: 8px;
   font-size: 1.1rem;
 }
@@ -247,6 +259,22 @@ defineExpose({
 .info-item .label {
   font-weight: 600;
   min-width: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.label-icon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  display: inline-block;
+}
+
+.label-icon-secundarios {
+  width: 26px;
+  height: 26px;
+  margin-left: -4px; /* desplazar un poco hacia la izquierda */
 }
 
 .cell-limpieza {
@@ -333,6 +361,13 @@ defineExpose({
   background: #c82333;
   transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
+}
+
+.admin-only-hint {
+  display: inline-block;
+  font-size: 1.2rem;
+  cursor: help;
+  title: "Solo admin puede eliminar";
 }
 
 .error-message {

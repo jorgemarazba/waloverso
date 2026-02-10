@@ -16,6 +16,7 @@ const debugMode = ref(false)
 const debugMessage = ref('')
 const showForm = ref(false)
 const currentPage = ref('welcome')
+const searchQuery = ref('')
 
 // Detectar si está en modo demo
 const isDemoMode = computed(() => {
@@ -24,8 +25,22 @@ const isDemoMode = computed(() => {
   return !url || !key || url.trim() === '' || key.trim() === ''
 })
 
-// Todos los miembros sin filtrar
-const filteredMembers = computed(() => allMembers.value)
+// Filtrar miembros por búsqueda
+const filteredMembers = computed(() => {
+  if (!searchQuery.value.trim()) {
+    return allMembers.value
+  }
+  
+  const query = searchQuery.value.toLowerCase().trim()
+  return allMembers.value.filter(member => {
+    const principal = (member.personaje_principal || '').toLowerCase()
+    const apodo = (member.apodo_ankama || '').toLowerCase()
+    const twitch = (member.nombre_twitch || '').toLowerCase()
+    const invito = (member.quien_invito || '').toLowerCase()
+    
+    return principal.includes(query) || apodo.includes(query) || twitch.includes(query) || invito.includes(query)
+  })
+})
 
 const loadMembers = async () => {
   try {
@@ -138,9 +153,9 @@ defineExpose({
     <!-- PÁGINA DE CALAMARDOS (MIEMBROS) -->
     <template v-else>
       <header class="app-header">
+        <h1>Registro de Calamardos</h1>
+        <p class="subtitle">Monitorea la actividad de tus miembros de gremio</p>
         <div class="header-content">
-          <h1>Registro de Calamardos</h1>
-          <p class="subtitle">Monitorea la actividad de tus miembros de gremio</p>
           <div v-if="isDemoMode" class="demo-notice">
             ⚠️ Modo Demo (sin Supabase) - Los datos se guardan localmente
           </div>
@@ -159,11 +174,22 @@ defineExpose({
 
       <main class="app-main">
         <div class="container">
-          <!-- BOTÓN PARA ABRIR FORMULARIO -->
-          <div v-if="!showForm" class="section-new-button">
-            <button @click="showForm = true" class="btn-new-calamardo">
+          <!-- BOTÓN PARA ABRIR FORMULARIO Y BUSCADOR -->
+          <div class="section-controls">
+            <button v-if="!showForm" @click="showForm = true" class="btn-new-calamardo">
               ➕ Nuevo Calamardo
             </button>
+            <div class="search-box">
+              <input
+                v-model="searchQuery"
+                type="text"
+                placeholder="🔍 Buscar por nombre, apodo, twitch o invitador..."
+                class="search-input"
+              />
+              <span v-if="searchQuery" class="search-count">
+                {{ filteredMembers.length }} encontrado(s)
+              </span>
+            </div>
           </div>
 
           <!-- FORMULARIO (OCULTO POR DEFECTO) -->
@@ -225,6 +251,31 @@ defineExpose({
   background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
 }
 
+/* Fondo SOLO en la sección de "calamardos" */
+.app-main {
+  position: relative;
+  background-image: url('/waloverso.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+/* Overlay leve para legibilidad sin tapar el fondo */
+.app-main::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.25);
+  pointer-events: none;
+}
+
+/* Asegura que el contenido quede encima del overlay */
+.app-main > .container {
+  position: relative;
+  z-index: 1;
+}
+
 .app-header {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
@@ -252,7 +303,7 @@ defineExpose({
   z-index: 1;
 }
 
-.header-content h1 {
+.app-header > h1 {
   font-size: 3rem;
   margin-bottom: 0.5rem;
   text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.3);
@@ -319,23 +370,62 @@ defineExpose({
   margin: 0 auto;
 }
 
-.section-new-button {
-  text-align: center;
-  margin-bottom: 3rem;
+.section-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
   animation: slideUp 0.6s ease-out;
+  flex-wrap: wrap;
+}
+
+.search-box {
+  flex: 1;
+  min-width: 250px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.search-input {
+  flex: 1;
+  padding: 0.75rem 1.2rem;
+  border: 2px solid #667eea;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  transition: all 0.3s;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #764ba2;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+}
+
+.search-count {
+  padding: 0.5rem 0.8rem;
+  background: rgba(102, 126, 234, 0.1);
+  color: #667eea;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .btn-new-calamardo {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   border: none;
-  padding: 1.2rem 2.5rem;
-  font-size: 1.1rem;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
   font-weight: 600;
-  border-radius: 12px;
+  border-radius: 8px;
   cursor: pointer;
-  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
   transition: all 0.3s ease;
+  white-space: nowrap;
 }
 
 .btn-new-calamardo:hover {
@@ -387,7 +477,7 @@ defineExpose({
     padding: 2rem 1rem;
   }
 
-  .header-content h1 {
+  .app-header > h1 {
     font-size: 2rem;
   }
 

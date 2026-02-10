@@ -12,7 +12,7 @@
       <div class="stat-icon">⚔️</div>
       <div class="stat-content">
         <p class="stat-value">{{ totalSuperviviencia }}</p>
-        <p class="stat-label">Supervivencia Total</p>
+        <p class="stat-label">Purgas Totales</p>
       </div>
     </div>
 
@@ -20,7 +20,7 @@
       <div class="stat-icon">📊</div>
       <div class="stat-content">
         <p class="stat-value">{{ averageSuperviviencia }}</p>
-        <p class="stat-label">Promedio Supervivencia</p>
+        <p class="stat-label">Promedio de Purga</p>
       </div>
     </div>
 

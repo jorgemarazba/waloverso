@@ -7,17 +7,55 @@ const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
 const IS_DEMO_MODE = !SUPABASE_URL || !SUPABASE_KEY
 
+// ==================== FUNCIONES HELPER ====================
+
+// Convertir personajes_secundarios a array (desde BD o formulario)
+function parseSecundarios(data) {
+  if (!data) return []
+  if (Array.isArray(data)) {
+    return data.filter(s => s && s.trim())
+  }
+  if (typeof data === 'string' && data.trim()) {
+    return data.split(',').map(s => s.trim()).filter(s => s)
+  }
+  return []
+}
+
+// Convertir personajes_secundarios a string para almacenar en BD
+function stringifySecundarios(data) {
+  if (Array.isArray(data)) {
+    return data.filter(s => s && s.trim()).join(',')
+  }
+  if (typeof data === 'string') {
+    return data.trim()
+  }
+  return ''
+}
+
+// Procesar miembro para mantener compatibilidad formato array
+function processMember(member) {
+  return {
+    ...member,
+    personajes_secundarios: parseSecundarios(member.personajes_secundarios)
+  }
+}
+
 // ==================== FUNCIONES DEMO (localStorage) ====================
 function getStoredMembers() {
   const data = localStorage.getItem(TABLE_NAME)
-  return data ? JSON.parse(data) : []
+  const members = data ? JSON.parse(data) : []
+  // Asegurar que personajes_secundarios es un array
+  return members.map(m => processMember(m))
 }
 
 function saveMembers(members) {
-  localStorage.setItem(TABLE_NAME, JSON.stringify(members))
+  // Convertir a string antes de guardar
+  const membersToSave = members.map(m => ({
+    ...m,
+    personajes_secundarios: stringifySecundarios(m.personajes_secundarios)
+  }))
+  localStorage.setItem(TABLE_NAME, JSON.stringify(membersToSave))
 }
-
-// ==================== FUNCIONES PRINCIPALES ====================
 
 // Obtener todos los miembros
 export async function getMembers() {
@@ -35,7 +73,8 @@ export async function getMembers() {
       .order('created_at', { ascending: false })
 
     if (error) throw error
-    return data || []
+    // Procesar datos para convertir personajes_secundarios a array
+    return (data || []).map(member => processMember(member))
   } catch (error) {
     console.error('Error al obtener miembros:', error.message)
     throw error
@@ -51,6 +90,7 @@ export async function addMember(member) {
       const newMember = {
         id: Date.now(),
         ...member,
+        personajes_secundarios: parseSecundarios(member.personajes_secundarios),
         supervivencia_purga: member.supervivencia_purga || 0,
         created_at: new Date().toISOString()
       }
@@ -65,7 +105,7 @@ export async function addMember(member) {
       .insert([{
         personaje_principal: member.personaje_principal,
         apodo_ankama: member.apodo_ankama || '',
-        personajes_secundarios: member.personajes_secundarios || '',
+        personajes_secundarios: stringifySecundarios(member.personajes_secundarios),
         nombre_twitch: member.nombre_twitch || '',
         quien_invito: member.quien_invito || '',
         supervivencia_purga: member.supervivencia_purga || 0
@@ -73,7 +113,7 @@ export async function addMember(member) {
       .select()
 
     if (error) throw error
-    return data[0]
+    return processMember(data[0])
   } catch (error) {
     console.error('Error al agregar miembro:', error.message)
     throw error
@@ -92,6 +132,7 @@ export async function updateMember(id, member) {
       members[index] = {
         ...members[index],
         ...member,
+        personajes_secundarios: parseSecundarios(member.personajes_secundarios),
         updated_at: new Date().toISOString()
       }
       saveMembers(members)
@@ -104,7 +145,7 @@ export async function updateMember(id, member) {
       .update({
         personaje_principal: member.personaje_principal,
         apodo_ankama: member.apodo_ankama || '',
-        personajes_secundarios: member.personajes_secundarios || '',
+        personajes_secundarios: stringifySecundarios(member.personajes_secundarios),
         nombre_twitch: member.nombre_twitch || '',
         quien_invito: member.quien_invito || '',
         supervivencia_purga: member.supervivencia_purga || 0
@@ -113,7 +154,7 @@ export async function updateMember(id, member) {
       .select()
 
     if (error) throw error
-    return data[0]
+    return processMember(data[0])
   } catch (error) {
     console.error('Error al actualizar miembro:', error.message)
     throw error
@@ -178,7 +219,7 @@ export async function incrementSuperviviencia(id) {
       .select()
 
     if (error) throw error
-    return data[0]
+    return processMember(data[0])
   } catch (error) {
     console.error('Error al incrementar supervivencia:', error.message)
     throw error

@@ -1,7 +1,7 @@
 <template>
   <div class="member-cards">
     <div v-if="filteredMembers.length === 0" class="empty-state">
-      <p>😢 No hay miembros que coincidan con tu búsqueda</p>
+      <p>😢 No hay miembros registrados. ¡Agrega el primero!</p>
     </div>
 
     <div v-else class="cards-grid">
@@ -9,10 +9,27 @@
         <div class="card-header">
           <h3>{{ member.personaje_principal }}</h3>
           <div class="card-actions">
-            <button @click="$emit('edit', member)" class="btn-icon" title="Editar">
+            <button 
+              v-if="isAuthenticated && isAdmin"
+              @click="$emit('edit', member)" 
+              class="btn-icon" 
+              title="Editar"
+            >
               ✎
             </button>
-            <button @click="$emit('delete', member.id)" class="btn-icon btn-delete" title="Eliminar">
+            <span 
+              v-else 
+              class="lock-icon" 
+              title="Solo el administrador puede editar"
+            >
+              🔒
+            </span>
+            <button 
+              v-if="isAuthenticated && isAdmin"
+              @click="$emit('delete', member.id)" 
+              class="btn-icon btn-delete" 
+              title="Eliminar"
+            >
               ✕
             </button>
           </div>
@@ -20,17 +37,34 @@
 
         <div class="card-body">
           <div class="card-section">
-            <span class="label">📛 Apodo Ankama</span>
+            <span class="label">
+              <img src="/ankama.png" alt="Apodo Ankama" class="label-icon" />
+              Apodo Ankama
+            </span>
             <p class="value">{{ member.apodo_ankama }}</p>
           </div>
 
-          <div v-if="member.personajes_secundarios" class="card-section">
-            <span class="label">🔄 Personajes Secundarios</span>
-            <p class="value">{{ member.personajes_secundarios }}</p>
+          <div v-if="member.personajes_secundarios && member.personajes_secundarios.length > 0" class="card-section">
+            <span class="label">
+              <img src="/secundarios.png" alt="Personajes secundarios" class="label-icon label-icon-secundarios" />
+              Personajes Secundarios
+            </span>
+            <div class="secundarios-display">
+              <span 
+                v-for="(secundario, idx) in formatSecundarios(member.personajes_secundarios)" 
+                :key="idx"
+                class="secundario-tag"
+              >
+                {{ secundario }}
+              </span>
+            </div>
           </div>
 
           <div v-if="member.nombre_twitch" class="card-section">
-            <span class="label">🎮 Twitch</span>
+            <span class="label">
+              <img src="/twicht.jpg" alt="Twitch" class="label-icon" />
+              Twitch
+            </span>
             <p class="value">
               <a :href="`https://twitch.tv/${member.nombre_twitch}`" target="_blank">
                 {{ member.nombre_twitch }}
@@ -46,10 +80,9 @@
 
         <div class="card-footer">
           <div class="supervivencia-counter">
-            <span class="label">Supervivencia 🗡️</span>
+            <span class="label">Purga 🗡️</span>
             <div class="counter">
               <span class="count">{{ member.supervivencia_purga || 0 }}</span>
-              <button @click="$emit('increment', member.id)" class="btn-increment">+</button>
             </div>
           </div>
         </div>
@@ -60,6 +93,7 @@
 
 <script setup>
 import { computed } from 'vue'
+import { useAuthStore } from '../stores/adminStore'
 
 const props = defineProps({
   members: {
@@ -70,7 +104,19 @@ const props = defineProps({
 
 defineEmits(['edit', 'delete', 'increment'])
 
+const { isAdmin, isAuthenticated } = useAuthStore()
+
 const filteredMembers = computed(() => props.members)
+
+const formatSecundarios = (secundarios) => {
+  if (Array.isArray(secundarios)) {
+    return secundarios.filter(s => s && s.trim())
+  }
+  if (typeof secundarios === 'string' && secundarios.trim()) {
+    return secundarios.split(',').map(s => s.trim()).filter(s => s)
+  }
+  return []
+}
 </script>
 
 <style scoped>
@@ -81,9 +127,10 @@ const filteredMembers = computed(() => props.members)
 .empty-state {
   text-align: center;
   padding: 3rem;
-  background: #f5f5f5;
+  background: rgba(10, 10, 30, 0.55);
+  backdrop-filter: blur(6px);
   border-radius: 8px;
-  color: #999;
+  color: #e0e0ff;
   font-size: 1.1rem;
 }
 
@@ -94,10 +141,14 @@ const filteredMembers = computed(() => props.members)
 }
 
 .member-card {
-  background: white;
+  /* Blanco casi sólido con leve efecto cristal */
+  background: rgba(255, 255, 255, 0.97);
+  backdrop-filter: blur(12px) saturate(140%);
+  -webkit-backdrop-filter: blur(12px) saturate(140%);
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
   transition: all 0.3s ease;
   display: flex;
   flex-direction: column;
@@ -150,6 +201,12 @@ const filteredMembers = computed(() => props.members)
   background: rgba(220, 53, 69, 0.8);
 }
 
+.lock-icon {
+  font-size: 1.1rem;
+  cursor: default;
+  opacity: 0.7;
+}
+
 .card-body {
   padding: 1rem;
   flex: 1;
@@ -165,10 +222,12 @@ const filteredMembers = computed(() => props.members)
 
 .label {
   font-size: 0.8rem;
-  color: #999;
+  color: #666;
   font-weight: 600;
   text-transform: uppercase;
-  display: block;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   margin-bottom: 0.3rem;
 }
 
@@ -180,10 +239,23 @@ const filteredMembers = computed(() => props.members)
   word-break: break-word;
 }
 
+.label-icon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  display: inline-block;
+}
+
+.label-icon-secundarios {
+  width: 26px;
+  height: 26px;
+  margin-left: -4px; /* desplazar un poco hacia la izquierda */
+}
+
 .card-footer {
-  background: #f9f9f9;
+  background: rgba(255, 255, 255, 0.96);
   padding: 1rem;
-  border-top: 1px solid #eee;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 .supervivencia-counter {
@@ -222,6 +294,23 @@ const filteredMembers = computed(() => props.members)
 .btn-increment:hover {
   background: #218838;
   transform: scale(1.1);
+}
+
+.secundarios-display {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.secundario-tag {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 0.4rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  display: inline-block;
+  box-shadow: 0 2px 4px rgba(102, 126, 234, 0.2);
 }
 
 @media (max-width: 768px) {
